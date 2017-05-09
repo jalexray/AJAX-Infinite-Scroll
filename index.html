@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<body>
+<!--The next 4 lines are here to include bootstrap and jquery-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script><!-- jquery-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><!-- bootstrap core-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"> <!-- bootstrap theme-->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity=" sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> <!-- more bootstrap-->
+<!-- Here's the styling for our page: a div centered on the page with a margin-->
+<div class="col-xs-6 col-xs-offset-3 text-center" style="margin-top:20vh;">
+	<div class="col-xs-12 text-center" id="infinite-0" style="height:100vh;"> <!-- This is the important part of our page. It includes the ID infinite-0, which everything is rooted off of. It's also tall enough that you can trigger the infinite scroll -->
+		<h1>Infinite Scroll Demo</h1>
+        <p>Enjoy a bunch of drawings of a flask!</p> <!-- Just for fun -->
+	</div>
+</div>
+<script>
+
+
+function insertAfter(oldDiv, newDiv) {// this is a function that kind of tricks insertBefore-nextSibling into letting us insert after. It's handy!
+    oldDiv.parentNode.insertBefore(newDiv, oldDiv.nextSibling);
+}
+var inprocess; // we'll use this as a state variable to prevent the AJAX call from triggering twice at the same time. We only want to load one next-content, not many!
+var iteration = 0; // we'll use this to identify what iteration of the loop we're on. That'll let us keep track of where we are, plus manage our div placement as we want.
+var contentList = [];
+$(document).ready(function(){ // once the document loads, get a list of what we want to load on infinite scroll through an AJAX API call. For simplicity, we use PHP in this example.
+    $.ajax({
+        url : "api.php", // This is where we're getting our list of files from. Check out the included file to see what's going on over there.
+        dataType: 'json', // We're getting a JSON response back. That lets us process it as a JSON. Woo!
+        success: function (data) { // On successfully getting api.php, 
+            contentList = data; // Store that JSON as "data"
+        }
+    });
+    $(document).scroll(function(e){ 
+        if (inprocess) // If we're already processing, don't continue with this function. That way we won't end up loading many at the same time.
+            return false;
+        if (!contentList[iteration]) // If we're out of content, don't continue with this function. Otherwise, we're trying to serve stuff that doesn't exist!
+            return false;
+        // The next two lines do the same thing. One does it using page height % and the other uses page height in pixels.
+        //if ($(window).scrollTop() >= ($(document).height() - $(window).height())*0.7){// Here, .7 (70%) is the percent of page where we want to trigger the event. There are some downsides to using % (if we use this for a very long page). In that case, using a set pixel value is probably better.
+        if ($(window).scrollTop() >= ($(document).height() - $(window).height()) - 700){// Here, 700 is our pixels-from-bottom where we want the new query to happen
+            inprocess = true; // sets the in-process flag to true
+            var oldDiv = document.getElementById("infinite-"+iteration); // get the last div we added to use as our oldDiv
+            iteration +=1; // add to our counter to prepare for our brand new div
+            var newDiv = document.createElement("div"); // make our div
+            newDiv.setAttribute("id", "infinite-"+iteration); // name it
+            newDiv.setAttribute("class", "col-xs-12 text-center"); // give it some styling/size
+            newDiv.innerHTML = "<a href='#'><img src='images/" + contentList[iteration-1] + "' border=0/><br>Picture "+iteration+"</a>"; // put what we want inside it
+            insertAfter(oldDiv, newDiv); // stick it on the page
+            document.getElementById("infinite-"+iteration).style.color = 'red'; // make it pretty
+            document.getElementById("infinite-"+iteration).style.height = '1000px'; // make it tall
+            inprocess = false; // turn off our state variable so we can do it all again
+        }
+    });
+});
+</script>
+</body> 
+</html>
